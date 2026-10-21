@@ -201,7 +201,7 @@ internal sealed class MainForm:Form
         loading=true;
         try{LoadSamples();}finally{loading=false;}
         await PreviewAsync();
-        if(sources.Items.Count!=3||preview?.View.CoreWebView2 is null)throw new InvalidOperationException("UI import/preview did not initialize.");
+        if(sources.Items.Count!=3||preview?.View.CoreWebView2 is null)throw new InvalidOperationException($"UI import/preview did not initialize: sources={sources.Items.Count}, selected={sources.SelectedIndex}, core={preview?.View.CoreWebView2 is not null}, status={status.Text}.");
         await preview.EvaluateAsync("new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve(true))))",CancellationToken.None);
         output.Text=Path.Combine(evidenceFolder,"ui-output");EnqueueAll();
         if(jobs.Count!=3||jobs.Any(j=>j.Settings.Width!=3840||j.Settings.Height!=2160))throw new InvalidOperationException("UI batch queue is incomplete.");

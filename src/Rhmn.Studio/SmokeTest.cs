@@ -40,7 +40,11 @@ internal static class SmokeTest
                     var area=Screen.PrimaryScreen?.WorkingArea??new Rectangle(0,0,1440,960);
                     studio.StartPosition=FormStartPosition.Manual;studio.Location=area.Location;
                     studio.Size=new Size(Math.Min(1440,area.Width),Math.Min(960,area.Height));
-                    studio.Show();studio.BringToFront();
+                    var shown=new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                    studio.Shown+=(_,_)=>shown.TrySetResult();
+                    studio.Show();
+                    await shown.Task.WaitAsync(TimeSpan.FromSeconds(30),timeout.Token);
+                    studio.BringToFront();
                     await studio.VerifyUiAsync(outputFolder);
                     studio.Close();
                 }
