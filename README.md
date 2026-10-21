@@ -4,7 +4,9 @@ Windows x64 desktop application in **C# / .NET 10 + WinForms + WebView2 + FFmpeg
 
 ## Verification status
 
-See `docs/BUILD-STATUS.md` for the actual verified state. A workflow file, source ZIP or a successful cross-compilation is not proof that the application has passed Windows integration testing. Release packaging is gated on the Windows smoke test.
+**v0.1.0 has passed a real Windows x64 build, WebView2 renders, desktop import/preview/queue checks, and installer installation.** [Verified workflow run](https://github.com/mywasapp/rhmnmotiongraphic/actions/runs/39684684263) · [Full status](docs/BUILD-STATUS.md).
+
+Tested code commit: `82d2dbe9ecb81eb57b0e3df88a058f46161c8e9b`. The workflow passed 31 core checks, 11 clock checks and 5 Windows integration cases, then compiled and installed the installer and compared the installed payload with the tested files. Downloads are in the run's `RHMN-Motion-Graphic-Studio-win-x64` artifact. Extract the complete portable ZIP or run the Setup executable; end users do not need Node.js or the .NET SDK.
 
 ## Features
 
