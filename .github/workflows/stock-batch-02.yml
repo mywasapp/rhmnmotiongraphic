@@ -1,0 +1,70 @@
+name: RACHMANZO Batch 02 - Render 4K MP4
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'stock-batch-02/**'
+      - '.github/workflows/stock-batch-02.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  render:
+    name: Render ${{ matrix.tag }} - ${{ matrix.scenes }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 110
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        include:
+          - tag: part-01
+            scenes: "013,014"
+          - tag: part-02
+            scenes: "015,016"
+          - tag: part-03
+            scenes: "017,018"
+          - tag: part-04
+            scenes: "019,020"
+          - tag: part-05
+            scenes: "021,022"
+          - tag: part-06
+            scenes: "023,024"
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Install Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ffmpeg
+      - name: Install Playwright and Chromium
+        working-directory: stock-batch-02
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Encode 4K MP4 videos and verify output
+        working-directory: stock-batch-02
+        env:
+          SCENES: ${{ matrix.scenes }}
+        run: |
+          node render.js
+          cat build/QA_Report.json
+      - name: Save MP4, metadata and QC as downloadable ZIP artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: RACHMANZO_Batch02_${{ matrix.tag }}
+          path: |
+            stock-batch-02/build/*.mp4
+            stock-batch-02/build/*.csv
+            stock-batch-02/build/*.json
+          if-no-files-found: warn
+          compression-level: 0
+          retention-days: 30
