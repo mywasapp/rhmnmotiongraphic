@@ -1,0 +1,78 @@
+name: Windows x64 build and verified render
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: windows-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  windows:
+    runs-on: windows-2025
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+      DOTNET_NOLOGO: '1'
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Install .NET 10 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Verify and install dependencies
+        run: ./scripts/Get-Dependencies.ps1 -InstallWebView2
+      - name: Core and real FFmpeg tests
+        run: |
+          $env:RHMN_TEST_FFMPEG = Join-Path $PWD 'vendor/ffmpeg/ffmpeg.exe'
+          $env:RHMN_TEST_FFPROBE = Join-Path $PWD 'vendor/ffmpeg/ffprobe.exe'
+          dotnet run --project tests/Rhmn.Tests -c Release
+          if ($LASTEXITCODE -ne 0) { throw 'Core tests failed.' }
+      - name: Animation clock logic tests
+        run: |
+          node tests/clock-unit.cjs
+          if ($LASTEXITCODE -ne 0) { throw 'Animation clock tests failed.' }
+      - name: Publish self-contained Windows x64
+        run: |
+          dotnet publish src/Rhmn.Studio -c Release -r win-x64 --self-contained true -o artifacts/portable -p:ContinuousIntegrationBuild=true -warnaserror
+          if ($LASTEXITCODE -ne 0) { throw 'Publish failed.' }
+          ./scripts/Copy-Notices.ps1
+      - name: Real WebView2 render and output verification
+        run: ./scripts/Test-Windows.ps1
+      - name: Ensure installer compiler
+        run: |
+          if (!(Test-Path "${env:ProgramFiles(x86)}/Inno Setup 6/ISCC.exe")) {
+            choco install innosetup --yes --no-progress
+            if ($LASTEXITCODE -ne 0) { throw 'Inno Setup install failed.' }
+          }
+      - name: Package and test installer
+        run: ./scripts/Package.ps1
+      - name: Upload verified Windows downloads
+        uses: actions/upload-artifact@v4
+        with:
+          name: RHMN-Motion-Graphic-Studio-win-x64
+          path: |
+            artifacts/RHMN-*.exe
+            artifacts/RHMN-*.zip
+            artifacts/SHA256SUMS.txt
+            artifacts/build-manifest.json
+            artifacts/windows-verified.json
+          if-no-files-found: error
+          retention-days: 30
+      - name: Upload test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Windows-test-evidence
+          path: |
+            artifacts/smoke-*/**
+            artifacts/dependencies/dependencies.json
+          if-no-files-found: warn
+          retention-days: 14

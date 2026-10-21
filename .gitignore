@@ -1,0 +1,11 @@
+**/bin/
+**/obj/
+.vs/
+artifacts/
+vendor/
+TestResults/
+*.user
+*.log
+*.mp4
+*.partial.mp4
+.DS_Store

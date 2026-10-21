@@ -1,3 +1,54 @@
+# RHMN Motion Graphic Studio
+
+Windows x64 desktop application in **C# / .NET 10 + WinForms + WebView2 + FFmpeg**, with an Indonesian interface.
+
+## Verification status
+
+See `docs/BUILD-STATUS.md` for the actual verified state. A workflow file, source ZIP or a successful cross-compilation is not proof that the application has passed Windows integration testing. Release packaging is gated on the Windows smoke test.
+
+## Features
+
+- Import HTML files/folders and local CSS/JS/assets; live preview.
+- Per-job settings, persistent batch queue, progress, estimated remaining time, cancellation, collision-safe MP4 output.
+- 1080p, UHD 4K, DCI 4K, vertical and square presets; exact fractional FPS; duration and bitrate controls.
+- Deterministic renderAtTime(t) integration and compatibility clock for CSS/RAF/timers.
+- PNG frame streaming into FFmpeg/libx264, yuv420p, BT.709 tagging, faststart MP4.
+- FFprobe verification, complete decode validation, loop endpoint comparison and Indonesian QC reports.
+- Remote HTTP assets blocked by default; no native host objects exposed to project JavaScript.
+- Three original example projects and Indonesian user guide.
+
+No Node.js, developer SDK or terminal is needed by the end user. The portable package includes .NET and FFmpeg. WebView2 Evergreen Runtime is a prerequisite; its bootstrapper is included in release packages.
+
+## Development
+
+Install .NET 10 SDK. On Windows:
+
+```powershell
+./scripts/Get-Dependencies.ps1
+dotnet run --project tests/Rhmn.Tests -c Release
+dotnet publish src/Rhmn.Studio -c Release -r win-x64 --self-contained true -o artifacts/portable
+./scripts/Test-Windows.ps1 -AppDirectory artifacts/portable
+./scripts/Package.ps1
+```
+
+Cross-compilation is supported with `EnableWindowsTargeting=true`. Running the WinForms/WebView2 app requires Windows. Tests in `Rhmn.Tests` are a dependency-free assertion executable and return a nonzero exit code on failure. Set `RHMN_TEST_FFMPEG` and `RHMN_TEST_FFPROBE` to run an actual FFmpeg integration test.
+
+## GitHub Actions
+
+`.github/workflows/windows-x64.yml` runs on push, pull request and manual dispatch. It builds self-contained x64 output, runs core tests, launches the real WebView2 app to export three videos (including 4K and fractional FPS), verifies them, and only then packages portable and installer artifacts. Failure logs and smoke results are uploaded even on failure. A failed smoke test does not publish a usable release artifact.
+
+Repository: [mywasapp/rhmnmotiongraphic](https://github.com/mywasapp/rhmnmotiongraphic). The desktop application coexists with the existing RACHMANZO batch renderer. The workflow requires GitHub Actions to be enabled and Windows runner minutes to be available. No PAT or credential is stored in the source.
+
+## Scope and limitations
+
+See [Panduan](docs/PANDUAN.md) and [Architecture](docs/ARCHITECTURE.md). This is a web-animation exporter, not a general browser screen recorder, video editor or arbitrary Node application converter. Embedded media and iframes are not supported. Complex animation engines should implement renderAtTime(t). QC is a technical preflight, not Adobe approval.
+
+## Third-party components
+
+See `THIRD-PARTY-NOTICES.md`. FFmpeg is invoked as a separate executable. Keep its notices, license and source information with redistributed packages. The application source is provided to the project owner; no public open-source license is assumed.
+
+---
+
 # RHMN Motion Graphic Studio / RACHMANZO Stock Assets
 
 Repository GitHub untuk proyek **RHMN Motion Graphic Studio** dan produksi animasi stok komersial **RACHMANZO**.

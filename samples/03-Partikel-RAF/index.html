@@ -1,0 +1,4 @@
+<!doctype html><html lang="id"><meta charset="utf-8"><title>Orbit Particles • RHMN</title><style>html,body{margin:0;overflow:hidden;background:#0b1428}canvas{display:block;width:100vw;height:100vh}</style><canvas></canvas><script>
+const c=document.querySelector('canvas'),x=c.getContext('2d');const start=performance.now();const dots=Array.from({length:100},()=>({a:Math.random()*Math.PI*2,r:.1+Math.random()*.35,s:1+Math.random()*3}));
+function draw(now){c.width=innerWidth;c.height=innerHeight;const w=c.width,h=c.height,p=(now-start)/1000/10*Math.PI*2;x.fillStyle='#0b1428';x.fillRect(0,0,w,h);for(const d of dots){const a=d.a+p,px=w*.65+Math.cos(a)*w*d.r*.6,py=h*.5+Math.sin(a)*h*d.r;x.beginPath();x.arc(px,py,d.s*w/1400,0,Math.PI*2);x.fillStyle='#9be8e0';x.fill();}requestAnimationFrame(draw);}requestAnimationFrame(draw);
+</script></html>
