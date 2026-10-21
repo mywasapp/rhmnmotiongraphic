@@ -28,9 +28,10 @@ internal sealed class MainForm:Form
     StudioBrowser? preview;
     CancellationTokenSource? previewCancellation,renderCancellation;
     bool busy,loading,closeAfterCancel;
-    static string StatePath=>Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"RHMN","MotionStudio","session.json");
-    public MainForm()
+    readonly string statePath;
+    public MainForm(string? sessionPath=null)
     {
+        statePath=sessionPath??Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"RHMN","MotionStudio","session.json");
         Text="RHMN Motion Graphic Studio";Width=1440;Height=960;MinimumSize=new Size(1120,780);StartPosition=FormStartPosition.CenterScreen;
         BackColor=Background;ForeColor=TextMain;Font=new Font("Segoe UI",10);
         Icon=Icon.ExtractAssociatedIcon(Environment.ProcessPath!);
@@ -193,8 +194,26 @@ internal sealed class MainForm:Form
     void SaveQueue(){using var d=new SaveFileDialog{Filter="Antrean RHMN|*.rhmn.json",FileName="Antrean-RHMN.rhmn.json"};if(d.ShowDialog(this)==DialogResult.OK){JsonFiles.Save(d.FileName,Session());Log("Antrean disimpan.");}}
     void OpenQueue(){using var d=new OpenFileDialog{Filter="Antrean RHMN|*.rhmn.json;*.json"};if(d.ShowDialog(this)==DialogResult.OK){ApplySession(JsonFiles.Load<StudioSession>(d.FileName)??throw new InvalidDataException("Antrean tidak valid."));Persist();}}
     StudioSession Session()=>new(sources.Items.Cast<SourceEntry>().Select(s=>s.Path).ToArray(),jobs.ToList(),output.Text,Settings());
-    void Persist(){if(loading)return;try{JsonFiles.Save(StatePath,Session());}catch(Exception e){Log("Sesi belum tersimpan: "+e.Message);}}
-    void RestoreSession(){if(File.Exists(StatePath))try{var state=JsonFiles.Load<StudioSession>(StatePath);if(state is not null)ApplySession(state);}catch(Exception e){Log("Sesi sebelumnya tidak dapat dibuka: "+e.Message);}}
+    void Persist(){if(loading)return;try{JsonFiles.Save(statePath,Session());}catch(Exception e){Log("Sesi belum tersimpan: "+e.Message);}}
+    void RestoreSession(){if(File.Exists(statePath))try{var state=JsonFiles.Load<StudioSession>(statePath);if(state is not null)ApplySession(state);}catch(Exception e){Log("Sesi sebelumnya tidak dapat dibuka: "+e.Message);}}
+    internal async Task VerifyUiAsync(string evidenceFolder)
+    {
+        loading=true;
+        try{LoadSamples();}finally{loading=false;}
+        await PreviewAsync();
+        if(sources.Items.Count!=3||preview?.View.CoreWebView2 is null)throw new InvalidOperationException("UI import/preview did not initialize.");
+        await preview.EvaluateAsync("new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve(true))))",CancellationToken.None);
+        output.Text=Path.Combine(evidenceFolder,"ui-output");EnqueueAll();
+        if(jobs.Count!=3||jobs.Any(j=>j.Settings.Width!=3840||j.Settings.Height!=2160))throw new InvalidOperationException("UI batch queue is incomplete.");
+        Persist();
+        var restored=JsonFiles.Load<StudioSession>(statePath)??throw new InvalidDataException("UI session was not saved.");
+        if(restored.Jobs.Count!=3)throw new InvalidDataException("UI queue persistence failed.");
+        status.Text="Uji Windows lulus • 3 proyek diimpor • preview aktif • antrean tersimpan";
+        Refresh();
+        using var image=new Bitmap(Width,Height);
+        using(var graphics=Graphics.FromImage(image))graphics.CopyFromScreen(Location,Point.Empty,Size);
+        image.Save(Path.Combine(evidenceFolder,"studio-windows.png"),System.Drawing.Imaging.ImageFormat.Png);
+    }
     void ApplySession(StudioSession s)
     {
         s.Settings.Validate();foreach(var job in s.Jobs){job.Settings.Validate();if(Path.GetExtension(job.OutputFile)!=".mp4")throw new InvalidDataException("Tujuan antrean harus MP4.");}

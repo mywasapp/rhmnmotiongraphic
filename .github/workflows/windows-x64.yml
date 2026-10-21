@@ -3,7 +3,29 @@ on:
   push:
     branches: [main]
     tags: ['v*']
+    paths:
+      - '.github/workflows/windows-x64.yml'
+      - 'src/**'
+      - 'tests/**'
+      - 'scripts/**'
+      - 'samples/**'
+      - 'installer/**'
+      - 'Directory.Build.props'
+      - 'global.json'
+      - 'docs/PANDUAN.md'
+      - 'THIRD-PARTY-NOTICES.md'
   pull_request:
+    paths:
+      - '.github/workflows/windows-x64.yml'
+      - 'src/**'
+      - 'tests/**'
+      - 'scripts/**'
+      - 'samples/**'
+      - 'installer/**'
+      - 'Directory.Build.props'
+      - 'global.json'
+      - 'docs/PANDUAN.md'
+      - 'THIRD-PARTY-NOTICES.md'
   workflow_dispatch:
 permissions:
   contents: read

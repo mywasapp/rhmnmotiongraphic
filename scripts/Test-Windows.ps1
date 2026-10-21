@@ -8,14 +8,19 @@ if (!(Test-Path $exe)) { throw 'Published application not found.' }
 $output = Join-Path $root ('artifacts/smoke-' + [Guid]::NewGuid().ToString('N'))
 New-Item $output -ItemType Directory -Force | Out-Null
 $process = Start-Process $exe -ArgumentList '--smoke-test',('"' + $output + '"') -PassThru
-if (!$process.WaitForExit(1200000)) { Stop-Process -Id $process.Id -Force; throw 'Windows render test timed out after 20 minutes.' }
+$deadline = [DateTime]::UtcNow.AddMinutes(20)
+while (!$process.WaitForExit(10000)) {
+    if ([DateTime]::UtcNow -gt $deadline) { Stop-Process -Id $process.Id -Force; throw 'Windows render test timed out after 20 minutes.' }
+    $progressLog = Join-Path $output 'progress.log'
+    if (Test-Path $progressLog) { Get-Content $progressLog -Tail 1 | Write-Host }
+}
 $process.Refresh()
 if ($process.ExitCode -ne 0) {
     if (Test-Path (Join-Path $output 'failure.txt')) { Get-Content (Join-Path $output 'failure.txt') | Write-Host }
     throw "Windows render test failed: exit $($process.ExitCode)"
 }
 $report = Get-Content (Join-Path $output 'smoke-results.json') -Raw | ConvertFrom-Json
-if ($report.exitCode -ne 0 -or @($report.results | Where-Object status -eq 'passed').Count -ne 4) { throw 'Smoke report is incomplete.' }
+if ($report.exitCode -ne 0 -or @($report.results | Where-Object status -eq 'passed').Count -ne 5) { throw 'Smoke report is incomplete.' }
 $ffmpeg = Join-Path $appPath 'tools/ffmpeg/ffmpeg.exe'
 foreach ($video in Get-ChildItem $output -Filter '*.mp4') {
     $frames = & $ffmpeg -v error -i $video.FullName -vf 'fps=1,scale=64:36' -f framemd5 -
